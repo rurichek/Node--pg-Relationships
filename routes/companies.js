@@ -32,14 +32,27 @@ router.get("/:code", async function (req, res, next) {
         [code]
     );
 
+    const indResult = await db.query(
+      `SELECT i.industry
+       FROM industries AS i
+       LEFT JOIN company_industry AS ci ON i.code = ci.industry_code
+       WHERE ci.company_code = $1`, 
+      [code]
+  );
+  
+
     if (compResult.rows.length === 0) {
       throw new ExpressError(`No such company: ${code}`, 404)
     }
 
     const company = compResult.rows[0];
     const invoices = invResult.rows;
+    const industries = indResult.rows;
+    console.log('industries'); // Check if this outputs any industries.
+
 
     company.invoices = invoices.map(inv => inv.id);
+    company.industries = industries.map(ind => ind.industry);
 
     return res.json({"company": company});
   }
@@ -51,7 +64,9 @@ router.get("/:code", async function (req, res, next) {
 
 router.post('/', async (req, res, next) => {
     try {
-      const { code, name, description } = req.body;
+      const { name, description } = req.body;
+      const code = slugify(name, {lower: true});
+      
       const results = await db.query('INSERT INTO companies (code, name, description) VALUES ($1, $2, $3) RETURNING code, name, description', [code, name, description]);
       return res.status(201).json({ company: results.rows[0] })
     } catch (e) {

@@ -71,4 +71,7 @@ describe("GET /companies", () => {
       expect(res.body).toEqual({ msg: 'DELETED!' })
     })
   })
-  
+
+
+
+
